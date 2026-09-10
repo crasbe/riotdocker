@@ -298,11 +298,11 @@ RUN \
     rm -rf /opt/rustup/.cargo/{git,registry,.package-cache}
 
 # get laze binary
-COPY --from=kaspar030/laze:0.1.20-ubuntu /laze /usr/bin/laze
+COPY --from=kaspar030/laze:0.1.20-resolute /laze /usr/bin/laze
 
 # get git-cache-rs binary and set the environment variable for
 # the RIOT package subsystem
-COPY --from=ghcr.io/kaspar030/git-cache:0.2.8-ubuntu /git-cache /usr/bin/git-cache
+COPY --from=ghcr.io/kaspar030/git-cache:0.2.8-resolute /git-cache /usr/bin/git-cache
 ENV GIT_CACHE_RS=/usr/bin/git-cache
 
 # get Dockerfile version from build args
