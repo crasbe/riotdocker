@@ -41,6 +41,7 @@ RUN \
         llvm-${LLVM_VERSION}-dev \
         clang-${LLVM_VERSION} \
         clang-tools-${LLVM_VERSION} \
+        clang-format-${LLVM_VERSION} \
         libclang-${LLVM_VERSION}-dev \
         lld-${LLVM_VERSION} \
     && echo 'Installing native toolchain and build system functionality' >&2 && \
