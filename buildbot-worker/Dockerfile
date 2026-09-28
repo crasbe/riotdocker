@@ -18,7 +18,9 @@ RUN \
         apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # install buildbot-worker. ccache and git-cache are already provided by riotbuild.
-RUN pip3 install buildbot-worker
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt \
+    && rm /tmp/requirements.txt
 
 COPY entrypoint.sh /usr/bin/buildbot-worker-entrypoint
 RUN chmod +x /usr/bin/buildbot-worker-entrypoint
