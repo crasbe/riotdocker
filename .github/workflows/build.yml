@@ -199,6 +199,18 @@ jobs:
           build-args: |
             DOCKER_REGISTRY=${{ env.DOCKER_REGISTRY }}
 
+      # Build-only for now: buildbot-worker is not pushed yet while the
+      # Buildbot migration is in progress alongside Murdock.
+      - name: Build buildbot worker
+        uses: docker/build-push-action@v7
+        with:
+          context: ./buildbot-worker
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/buildbot-worker:latest
+            ${{ env.DOCKER_REGISTRY }}/buildbot-worker:${{ env.VERSION_TAG }}
+          build-args: |
+            DOCKER_REGISTRY=${{ env.DOCKER_REGISTRY }}
+
       - name: Login to DockerHub
         if: "${{ github.ref == 'refs/heads/master' && needs.check-secret.outputs.secret-configured == 'true' }}"
         uses: docker/login-action@v4

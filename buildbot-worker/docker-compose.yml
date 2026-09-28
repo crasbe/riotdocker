@@ -1,0 +1,22 @@
+services:
+  worker:
+    image: riot/buildbot-worker:latest
+    init: true
+    restart: unless-stopped
+    user: "${BUILDBOT_UID:-1000}:${BUILDBOT_GID:-1000}"
+    tmpfs:
+      - /tmp:exec,size=${BUILDBOT_TMPFS_GIGS:-4}g,rw
+    volumes:
+      - cache:/cache
+      - home:/data/riotbuild
+    environment:
+      - JOBS=${BUILDBOT_JOBS:-4}
+      - CCACHE_MAXSIZE=${BUILDBOT_CCACHE_MAXSIZE_GIGS:-5}G
+      - BUILDBOT_MASTER_HOST=${BUILDBOT_MASTER_HOST:?set BUILDBOT_MASTER_HOST in .env}
+      - BUILDBOT_MASTER_PORT=${BUILDBOT_MASTER_PORT:-9989}
+      - BUILDBOT_WORKER_NAME=${BUILDBOT_WORKER_NAME:?set BUILDBOT_WORKER_NAME in .env}
+      - BUILDBOT_WORKER_PASSWORD=${BUILDBOT_WORKER_PASSWORD:?set BUILDBOT_WORKER_PASSWORD in .env}
+
+volumes:
+  cache:
+  home:

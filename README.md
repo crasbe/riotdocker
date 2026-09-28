@@ -50,6 +50,14 @@ changes to `riotbuild`.
 docker build --build-arg DOCKER_REGISTRY=docker.io/library -t murdock-worker ./murdock-worker/
 ```
 
+`buildbot-worker` also builds upon `riotbuild` and is the Buildbot equivalent
+of `murdock-worker` (see [`buildbot-worker/README.md`](buildbot-worker/README.md)
+for how to deploy it). Same optional `DOCKER_REGISTRY` argument:
+
+```sh
+docker build --build-arg DOCKER_REGISTRY=docker.io/library -t buildbot-worker ./buildbot-worker/
+```
+
 ## Testing your changes
 
 Before you can test your changes, you have to find out the Image ID of your
