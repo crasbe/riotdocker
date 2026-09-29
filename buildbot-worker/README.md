@@ -58,11 +58,17 @@ interface:
 - `WARNING: can't reach the dispatcher at ...`: wrong
   `BUILDBOT_DISPATCHER_HOST`/`_PORT`, the dispatcher isn't running, or a
   firewall blocks port 9989. Followed by endless "Scheduling retry" lines.
-- `unauthorized login; check worker name and password`: the dispatcher
-  was reached, but `BUILDBOT_WORKER_NAME`/`_PASSWORD` don't match its
-  `BUILDBOT_WORKERS` entry, or `BUILDBOT_WORKER_COUNT` exceeds that entry's
-  limit. The dispatcher logs `invalid login from user '<name>-<n>'`.
+- `WebSocket connection upgrade failed [401]: Unauthorized`: the
+  dispatcher was reached, but `BUILDBOT_WORKER_NAME`/`_PASSWORD` don't match
+  its `BUILDBOT_WORKERS` entry, or `BUILDBOT_WORKER_COUNT` exceeds that
+  entry's limit. The dispatcher logs `failing WebSocket opening handshake
+  ('Unauthorized')`, unfortunately without the worker's name.
 - `message from master: attached`: connected.
+
+Workers talk to the dispatcher using Buildbot's MessagePack protocol (over a
+WebSocket on port 9989) rather than the default PB protocol, whose
+connections break after a few thousand commands
+([buildbot#7911](https://github.com/buildbot/buildbot/issues/7911)).
 
 After changing `.env`, use `docker compose up -d` instead of `restart`.
 

@@ -34,10 +34,21 @@ while [ "${i}" -le "${COUNT}" ]; do
     # Recreated on every start so name, password or dispatcher changes apply.
     mkdir -p "${dir}"
     rm -f "${dir}/buildbot.tac" "${dir}"/twistd.log*
-    out=$(buildbot-worker create-worker --force "${dir}" "${DISPATCHER}" "${name}" "${PASSWORD}") || {
+    # MessagePack instead of the default PB protocol, matching the
+    # dispatcher: PB connections break after a few thousand commands
+    # (https://github.com/buildbot/buildbot/issues/7911).
+    out=$(buildbot-worker create-worker --force --protocol msgpack_experimental_v7 \
+            "${dir}" "${DISPATCHER}" "${name}" "${PASSWORD}") || {
         echo "${out}"
         exit 1
     }
+    # The protocol ships with debug logging on, which logs every message
+    # including all build output.
+    cat >> "${dir}/buildbot.tac" <<'EOF'
+
+from buildbot_worker.msgpack import BuildbotWebSocketClientProtocol
+BuildbotWebSocketClientProtocol.debug = False
+EOF
     # Shown on the worker's page in the dispatcher's web interface.
     printf '%s' "${BUILDBOT_WORKER_ADMIN:-}" > "${dir}/info/admin"
     printf '%s' "${BUILDBOT_WORKER_DESCRIPTION:-}" > "${dir}/info/host"
