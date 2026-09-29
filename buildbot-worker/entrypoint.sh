@@ -24,6 +24,8 @@ mkdir -p "${GIT_CACHE_DIR}" "${DLCACHE_DIR}" || {
 }
 
 pids=""
+dirs=""
+logs=""
 i=1
 while [ "${i}" -le "${COUNT}" ]; do
     # The dispatcher accepts "<name>-1" up to "<name>-<max>".
@@ -31,12 +33,49 @@ while [ "${i}" -le "${COUNT}" ]; do
     dir="${WORKERS_DIR}/${name}"
     # Recreated on every start so name, password or dispatcher changes apply.
     mkdir -p "${dir}"
-    rm -f "${dir}/buildbot.tac"
-    buildbot-worker create-worker --force "${dir}" "${DISPATCHER}" "${name}" "${PASSWORD}"
-    echo "starting worker ${name}"
+    rm -f "${dir}/buildbot.tac" "${dir}"/twistd.log*
+    out=$(buildbot-worker create-worker --force "${dir}" "${DISPATCHER}" "${name}" "${PASSWORD}") || {
+        echo "${out}"
+        exit 1
+    }
+    # Shown on the worker's page in the dispatcher's web interface.
+    printf '%s' "${BUILDBOT_WORKER_ADMIN:-}" > "${dir}/info/admin"
+    printf '%s' "${BUILDBOT_WORKER_DESCRIPTION:-}" > "${dir}/info/host"
+    dirs="${dirs} ${dir}"
+    logs="${logs} ${dir}/twistd.log"
+    i=$((i + 1))
+done
+
+# Each worker logs to twistd.log in its directory. Forward those logs to the
+# container log, each line prefixed with the worker's name (taken from the
+# "==> <path> <==" headers tail prints when switching files).
+# shellcheck disable=SC2086
+tail -v -n +1 -F ${logs} 2>/dev/null | while IFS= read -r line; do
+    case "${line}" in
+        "==> "*" <==") name=${line%/twistd.log <==}; name=${name##*/} ;;
+        "") ;;
+        *) printf '[%s] %s\n' "${name}" "${line}" ;;
+    esac
+done &
+
+# The password now lives in each worker's buildbot.tac. Keep it out of the
+# workers' environment, which Buildbot prints into every build step's log.
+unset BUILDBOT_WORKER_PASSWORD PASSWORD
+
+# buildbot-worker only logs "Scheduling retry" when it can't reach the
+# dispatcher, so say once why. Not fatal: the workers keep retrying.
+python3 - "${BUILDBOT_DISPATCHER_HOST}" "${BUILDBOT_DISPATCHER_PORT:-9989}" <<'EOF' || true
+import socket, sys
+try:
+    socket.create_connection((sys.argv[1], int(sys.argv[2])), timeout=10).close()
+except OSError as e:
+    print(f"WARNING: can't reach the dispatcher at {sys.argv[1]}:{sys.argv[2]}: {e}")
+EOF
+
+for dir in ${dirs}; do
+    echo "starting worker $(basename "${dir}"), connecting to ${DISPATCHER}"
     buildbot-worker start --nodaemon "${dir}" &
     pids="${pids} $!"
-    i=$((i + 1))
 done
 
 stopping=0

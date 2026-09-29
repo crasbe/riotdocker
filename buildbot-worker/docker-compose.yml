@@ -4,6 +4,10 @@ services:
     init: true
     restart: unless-stopped
     user: "${BUILDBOT_UID:-1000}:${BUILDBOT_GID:-1000}"
+    # Lets BUILDBOT_DISPATCHER_HOST=host.docker.internal reach a dispatcher
+    # running on the same machine.
+    extra_hosts:
+      - host.docker.internal:host-gateway
     tmpfs:
       # In RAM: the workers' checkouts and build output, the compiler cache,
       # and /tmp. Only the space actually used is taken from RAM.
@@ -22,6 +26,8 @@ services:
       - BUILDBOT_DISPATCHER_PORT=${BUILDBOT_DISPATCHER_PORT:-9989}
       - BUILDBOT_WORKER_NAME=${BUILDBOT_WORKER_NAME:?set BUILDBOT_WORKER_NAME in .env}
       - BUILDBOT_WORKER_PASSWORD=${BUILDBOT_WORKER_PASSWORD:?set BUILDBOT_WORKER_PASSWORD in .env}
+      - BUILDBOT_WORKER_ADMIN=${BUILDBOT_WORKER_ADMIN:-}
+      - BUILDBOT_WORKER_DESCRIPTION=${BUILDBOT_WORKER_DESCRIPTION:-}
     labels:
       - com.centurylinklabs.watchtower.scope=buildbot-worker-${BUILDBOT_WORKER_NAME}
 
