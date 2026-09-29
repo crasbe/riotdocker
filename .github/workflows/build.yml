@@ -199,8 +199,6 @@ jobs:
           build-args: |
             DOCKER_REGISTRY=${{ env.DOCKER_REGISTRY }}
 
-      # Build-only for now: buildbot-worker is not pushed yet while the
-      # Buildbot migration is in progress alongside Murdock.
       - name: Build buildbot worker
         uses: docker/build-push-action@v7
         with:
@@ -229,3 +227,5 @@ jobs:
           docker image push ${{ env.DOCKER_REGISTRY }}/riotbuild:${{ env.VERSION_TAG }}
           docker image push ${{ env.DOCKER_REGISTRY }}/murdock-worker:latest
           docker image push ${{ env.DOCKER_REGISTRY }}/murdock-worker:${{ env.VERSION_TAG }}
+          docker image push ${{ env.DOCKER_REGISTRY }}/buildbot-worker:latest
+          docker image push ${{ env.DOCKER_REGISTRY }}/buildbot-worker:${{ env.VERSION_TAG }}

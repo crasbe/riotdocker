@@ -1,1 +1,2 @@
+# Avoid pushing the configuration with private passwords to a repository
 .env

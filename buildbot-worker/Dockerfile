@@ -1,6 +1,6 @@
 # RIOT Buildbot worker Dockerfile
 #
-# the resulting image connects to a RIOT Buildbot master and runs compile/test
+# the resulting image connects to a RIOT Buildbot dispatcher and runs compile/test
 # builds -- the Buildbot equivalent of murdock-worker.
 
 ARG DOCKER_REGISTRY="docker.io/riot"
@@ -25,11 +25,14 @@ RUN pip3 install --no-cache-dir -r /tmp/requirements.txt \
 COPY entrypoint.sh /usr/bin/buildbot-worker-entrypoint
 RUN chmod +x /usr/bin/buildbot-worker-entrypoint
 
-# create cache folder
-RUN mkdir -m777 /cache
-
-# set cache folder for Download Cache
+# /cache: persistent download and git cache, shared by all workers.
+# /ccache: compiler cache, meant to be a tmpfs (see docker-compose.yml).
+RUN mkdir -m777 /cache /ccache
 ENV DLCACHE_DIR=/cache/.dlcache
+ENV GIT_CACHE_DIR=/cache/.gitcache
+# RIOT only uses ccache if CCACHE is set.
+ENV CCACHE=ccache
+ENV CCACHE_DIR=/ccache
 
 ENTRYPOINT ["/bin/bash", "/run.sh"]
 

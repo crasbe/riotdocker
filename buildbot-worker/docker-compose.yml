@@ -5,18 +5,36 @@ services:
     restart: unless-stopped
     user: "${BUILDBOT_UID:-1000}:${BUILDBOT_GID:-1000}"
     tmpfs:
+      # In RAM: the workers' checkouts and build output, the compiler cache,
+      # and /tmp. Only the space actually used is taken from RAM.
+      - /data/riotbuild:exec,size=${BUILDBOT_WORKDIR_GIGS:-8}g,rw
+      - /ccache:exec,size=${BUILDBOT_CCACHE_GIGS:-8}g,rw
       - /tmp:exec,size=${BUILDBOT_TMPFS_GIGS:-4}g,rw
     volumes:
+      # On disk, persistent: git-cache (including the mirror of RIOT that
+      # the checkouts borrow their git objects from) and dlcache.
       - cache:/cache
-      - home:/data/riotbuild
     environment:
       - JOBS=${BUILDBOT_JOBS:-4}
-      - CCACHE_MAXSIZE=${BUILDBOT_CCACHE_MAXSIZE_GIGS:-5}G
-      - BUILDBOT_MASTER_HOST=${BUILDBOT_MASTER_HOST:?set BUILDBOT_MASTER_HOST in .env}
-      - BUILDBOT_MASTER_PORT=${BUILDBOT_MASTER_PORT:-9989}
+      - BUILDBOT_CCACHE_GIGS=${BUILDBOT_CCACHE_GIGS:-8}
+      - BUILDBOT_WORKER_COUNT=${BUILDBOT_WORKER_COUNT:-1}
+      - BUILDBOT_DISPATCHER_HOST=${BUILDBOT_DISPATCHER_HOST:?set BUILDBOT_DISPATCHER_HOST in .env}
+      - BUILDBOT_DISPATCHER_PORT=${BUILDBOT_DISPATCHER_PORT:-9989}
       - BUILDBOT_WORKER_NAME=${BUILDBOT_WORKER_NAME:?set BUILDBOT_WORKER_NAME in .env}
       - BUILDBOT_WORKER_PASSWORD=${BUILDBOT_WORKER_PASSWORD:?set BUILDBOT_WORKER_PASSWORD in .env}
+    labels:
+      - com.centurylinklabs.watchtower.scope=buildbot-worker-${BUILDBOT_WORKER_NAME}
+
+  # Pulls new riot/buildbot-worker images and restarts the worker with them.
+  watchtower:
+    image: nickfedor/watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_SCOPE=buildbot-worker-${BUILDBOT_WORKER_NAME}
+      - WATCHTOWER_POLL_INTERVAL=${WATCHTOWER_POLL_INTERVAL:-3600}
+      - WATCHTOWER_CLEANUP=true
 
 volumes:
   cache:
-  home:
