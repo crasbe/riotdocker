@@ -64,13 +64,12 @@ unset BUILDBOT_WORKER_PASSWORD PASSWORD
 
 # buildbot-worker only logs "Scheduling retry" when it can't reach the
 # dispatcher, so say once why. Not fatal: the workers keep retrying.
-python3 - "${BUILDBOT_DISPATCHER_HOST}" "${BUILDBOT_DISPATCHER_PORT:-9989}" <<'EOF' || true
-import socket, sys
-try:
-    socket.create_connection((sys.argv[1], int(sys.argv[2])), timeout=10).close()
-except OSError as e:
-    print(f"WARNING: can't reach the dispatcher at {sys.argv[1]}:{sys.argv[2]}: {e}")
-EOF
+# Bidirectional on purpose: with -u, socat exits successfully before a
+# refused connection is noticed.
+if ! err=$(socat OPEN:/dev/null "TCP:${DISPATCHER},connect-timeout=10" 2>&1); then
+    # e.g. "... E read(6, ..., 8192): Connection refused"
+    echo "WARNING: can't reach the dispatcher at ${DISPATCHER}: ${err##*: }"
+fi
 
 for dir in ${dirs}; do
     echo "starting worker $(basename "${dir}"), connecting to ${DISPATCHER}"
